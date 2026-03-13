@@ -6,24 +6,85 @@
       <p class="page-desc">交换友链？随时欢迎！</p>
     </header>
 
-    <!-- Links Grid -->
-    <div class="links-grid">
-      <a
-        v-for="(link, index) in links"
-        :key="index"
-        :href="link.url"
-        target="_blank"
-        class="link-card"
-        :style="{ animationDelay: `${index * 0.1}s` }"
-      >
-        <div class="link-avatar">
-          <img :src="link.avatar" :alt="link.name" />
+    <!-- Loading State -->
+    <div v-if="loading" class="loading-state">
+      <div class="loading-spinner"></div>
+    </div>
+
+    <!-- Links by Category -->
+    <div v-else>
+      <!-- Best Friends (挚友) -->
+      <div v-if="bestFriends.length > 0" class="link-section">
+        <h2 class="section-title">挚友</h2>
+        <div class="links-grid">
+          <a
+            v-for="(link, index) in bestFriends"
+            :key="'best-' + index"
+            :href="link.url"
+            target="_blank"
+            class="link-card best-friend"
+            :style="{ animationDelay: `${index * 0.1}s` }"
+          >
+            <div class="link-avatar">
+              <img :src="link.avatar" :alt="link.name" />
+            </div>
+            <div class="link-info">
+              <h3 class="link-name">{{ link.name }}</h3>
+              <p class="link-desc">{{ link.description }}</p>
+            </div>
+          </a>
         </div>
-        <div class="link-info">
-          <h3 class="link-name">{{ link.name }}</h3>
-          <p class="link-desc">{{ link.description }}</p>
+      </div>
+
+      <!-- Friends (朋友) -->
+      <div v-if="friends.length > 0" class="link-section">
+        <h2 class="section-title">朋友</h2>
+        <div class="links-grid">
+          <a
+            v-for="(link, index) in friends"
+            :key="'friend-' + index"
+            :href="link.url"
+            target="_blank"
+            class="link-card"
+            :style="{ animationDelay: `${index * 0.1}s` }"
+          >
+            <div class="link-avatar">
+              <img :src="link.avatar" :alt="link.name" />
+            </div>
+            <div class="link-info">
+              <h3 class="link-name">{{ link.name }}</h3>
+              <p class="link-desc">{{ link.description }}</p>
+            </div>
+          </a>
         </div>
-      </a>
+      </div>
+
+      <!-- Visitors (来客) -->
+      <div v-if="visitors.length > 0" class="link-section">
+        <h2 class="section-title">来客</h2>
+        <div class="links-grid">
+          <a
+            v-for="(link, index) in visitors"
+            :key="'visitor-' + index"
+            :href="link.url"
+            target="_blank"
+            class="link-card"
+            :style="{ animationDelay: `${index * 0.1}s` }"
+          >
+            <div class="link-avatar">
+              <img :src="link.avatar" :alt="link.name" />
+            </div>
+            <div class="link-info">
+              <h3 class="link-name">{{ link.name }}</h3>
+              <p class="link-desc">{{ link.description }}</p>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <div v-if="links.length === 0" class="empty-tip">
+        暂无友链
+      </div>
     </div>
 
     <!-- Contact Section -->
@@ -44,46 +105,59 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { friendLinksApi } from '../api/frontend'
 
-const links = ref([
-  {
-    name: 'Vue 官方文档',
-    description: '渐进式 JavaScript 框架',
-    url: 'https://vuejs.org',
-    avatar: 'https://vuejs.org/logo.svg'
-  },
-  {
-    name: 'MDN Web Docs',
-    description: 'Mozilla 开发者网络',
-    url: 'https://developer.mozilla.org',
-    avatar: 'https://developer.mozilla.org/mdn-social-share.0ca8b497.png'
-  },
-  {
-    name: 'GitHub',
-    description: '全球最大代码托管平台',
-    url: 'https://github.com',
-    avatar: 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png'
-  },
-  {
-    name: 'CSS-Tricks',
-    description: 'CSS 技巧与前端资源',
-    url: 'https://css-tricks.com',
-    avatar: 'https://css-tricks.com/apple-touch-icon.png'
-  },
-  {
-    name: '掘金',
-    description: '程序员的技术社区',
-    url: 'https://juejin.cn',
-    avatar: 'https://p1-juejin.byteimg.com/tos-cn-i-qvj2lxx49k/favicon.ico~tplv-qvj2lxx49k-favicon.ico'
-  },
-  {
-    name: 'Vite',
-    description: '下一代前端构建工具',
-    url: 'https://vitejs.dev',
-    avatar: 'https://vitejs.dev/logo.svg'
+// 加载状态
+const loading = ref(true)
+
+// 友链数据
+const links = ref([])
+
+// 按权重分类
+const bestFriends = computed(() => {
+  return links.value.filter(link => link.weight === 0).map(item => ({
+    name: item.username,
+    description: item.signature || '暂无签名',
+    url: item.link_url,
+    avatar: item.icon_url || `https://api.dicebear.com/7.x/identicon/svg?seed=${item.username}`
+  }))
+})
+
+const friends = computed(() => {
+  return links.value.filter(link => link.weight === 1).map(item => ({
+    name: item.username,
+    description: item.signature || '暂无签名',
+    url: item.link_url,
+    avatar: item.icon_url || `https://api.dicebear.com/7.x/identicon/svg?seed=${item.username}`
+  }))
+})
+
+const visitors = computed(() => {
+  return links.value.filter(link => link.weight === 2).map(item => ({
+    name: item.username,
+    description: item.signature || '暂无签名',
+    url: item.link_url,
+    avatar: item.icon_url || `https://api.dicebear.com/7.x/identicon/svg?seed=${item.username}`
+  }))
+})
+
+// 从API加载数据
+const loadLinks = async () => {
+  try {
+    loading.value = true
+    const res = await friendLinksApi.list()
+    links.value = res.data
+  } catch (error) {
+    console.error('加载友链失败:', error)
+  } finally {
+    loading.value = false
   }
-])
+}
+
+onMounted(() => {
+  loadLinks()
+})
 </script>
 
 <style lang="scss" scoped>
@@ -236,5 +310,34 @@ const links = ref([
   .links-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* Loading & Empty States */
+.loading-state {
+  display: flex;
+  justify-content: center;
+  padding: var(--spacing-3xl);
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.empty-tip {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: var(--color-text-tertiary);
+  padding: var(--spacing-3xl);
 }
 </style>
