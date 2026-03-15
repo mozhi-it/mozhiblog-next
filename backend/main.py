@@ -4,11 +4,21 @@ FastAPI Main Application
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+import pydantic
 
 from config import config
 from models import create_tables
 from logger import setup_logger, logger
-from routes import admin_router, article_router, category_router, comment_router, friendlink_router, tag_router, messageboard_router
+from routes import admin_router, article_router, category_router, friendlink_router, tag_router
+
+# 配置 Pydantic 支持本地时间格式
+pydantic.DATETIME_STRING_FORMATS = [
+    "iso8601",
+    "%Y-%m-%dT%H:%M:%S",
+    "%Y-%m-%dT%H:%M",
+    "%Y-%m-%d %H:%M:%S",
+    "%Y-%m-%d %H:%M",
+]
 
 # 初始化日志配置
 logger = setup_logger(
@@ -54,10 +64,8 @@ async def global_exception_handler(request: Request, exc: Exception):
 app.include_router(admin_router)
 app.include_router(article_router)
 app.include_router(category_router)
-app.include_router(comment_router)
 app.include_router(friendlink_router)
 app.include_router(tag_router)
-app.include_router(messageboard_router)
 
 
 # 健康检查
